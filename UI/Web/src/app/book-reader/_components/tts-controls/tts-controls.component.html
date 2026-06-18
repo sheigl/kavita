@@ -1,0 +1,56 @@
+@if (visible()) {
+  <div class="tts-controls" [ngClass]="{ 'tts-active': isActive() }">
+
+    <!-- Progress bar -->
+    @if (isActive()) {
+      <div class="tts-progress-bar">
+        <div class="tts-progress-fill" [ngStyle]="{'width.%': progressPercent()}"></div>
+      </div>
+    }
+
+    <!-- Controls row -->
+    <div class="tts-controls-row">
+
+      <!-- Play/Pause toggle -->
+      @if (canTogglePause()) {
+        <button
+          type="button"
+          class="btn btn-sm tts-btn"
+          [ngbTooltip]="'reader.tts.' + (isPaused() ? 'resume' : 'pause') | transloco"
+          (click)="onTogglePause()">
+          @if (isPaused()) {
+            <i class="fa fa-play"></i>
+          } @else {
+            <i class="fa fa-pause"></i>
+          }
+        </button>
+      }
+
+      <!-- Stop button -->
+      @if (canStop()) {
+        <button
+          type="button"
+          class="btn btn-sm tts-btn"
+          [ngbTooltip]="'reader.tts.stop' | transloco"
+          (click)="onStop()">
+          <i class="fa fa-stop"></i>
+        </button>
+      }
+
+      <!-- Chunk progress indicator -->
+      @if (isActive()) {
+        <span class="tts-chunk-label">
+          {{ currentChunkIndex() + 1 }} / {{ totalChunks() }}
+        </span>
+      }
+
+      <!-- Error message -->
+      @if (errorMessage()) {
+        <span class="tts-error" [ngbTooltip]="errorMessage()">
+          <i class="fa fa-exclamation-triangle"></i>
+        </span>
+      }
+
+    </div>
+  </div>
+}

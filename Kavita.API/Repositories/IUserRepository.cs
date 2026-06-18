@@ -153,4 +153,10 @@ public interface IUserRepository
     Task<AppUserAuthKey?> GetAuthKeyById(int authKeyId, CancellationToken ct = default);
     Task<DateTime?> GetAuthKeyExpiration(string authKey, int userId, CancellationToken ct = default);
     #endregion
+
+    #region TTS
+    Task<UserTtsConfig?> GetUserTtsConfigAsync(int userId, CancellationToken ct = default);
+    void AddUserTtsConfig(UserTtsConfig config);
+    Task<AppUserReadingProfile?> GetUserReadingProfileForSeriesAsync(int userId, int seriesId, CancellationToken ct = default);
+    #endregion
 }

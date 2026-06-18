@@ -1,0 +1,152 @@
+<div class="modal-header">
+  <h4 class="modal-title" id="manage-tts-config-title">
+    <i class="fa fa-volume-up me-2" aria-hidden="true"></i>
+    <span>{{ 'tts.config.title' | transloco }}</span>
+  </h4>
+  <button type="button" class="btn-close" aria-label="Close" (click)="onClose()"></button>
+</div>
+
+<div class="modal-body">
+
+  @if (loading()) {
+    <div class="d-flex justify-content-center py-4">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  } @else {
+
+    <form [formGroup]="configForm" (ngSubmit)="onSave()">
+
+      <!-- Server URL -->
+      <div class="mb-3">
+        <label for="tts-server-url" class="form-label">{{ 'tts.config.server-url' | transloco }}</label>
+        <input
+          type="url"
+          id="tts-server-url"
+          class="form-control"
+          [class.is-invalid]="configForm.get('serverUrl')?.invalid && configForm.get('serverUrl')?.touched"
+          formControlName="serverUrl"
+          placeholder="https://api.openai.com"
+          autocomplete="off"
+        />
+        @if (configForm.get('serverUrl')?.hasError('required') && configForm.get('serverUrl')?.touched) {
+          <div class="invalid-feedback">{{ 'tts.config.server-url-required' | transloco }}</div>
+        }
+        <div class="form-text">{{ 'tts.config.server-url-help' | transloco }}</div>
+      </div>
+
+      <!-- API Key -->
+      <div class="mb-3">
+        <label for="tts-api-key" class="form-label">{{ 'tts.config.api-key' | transloco }}</label>
+        <input
+          type="password"
+          id="tts-api-key"
+          class="form-control"
+          formControlName="apiKey"
+          placeholder="sk-..."
+          autocomplete="new-password"
+        />
+        <div class="form-text">{{ 'tts.config.api-key-help' | transloco }}</div>
+      </div>
+
+      <!-- Model -->
+      <div class="mb-3">
+        <label for="tts-model" class="form-label">{{ 'tts.config.default-model' | transloco }}</label>
+        <input
+          type="text"
+          id="tts-model"
+          class="form-control"
+          [class.is-invalid]="configForm.get('defaultModel')?.invalid && configForm.get('defaultModel')?.touched"
+          formControlName="defaultModel"
+          placeholder="tts-1"
+        />
+        <div class="form-text">{{ 'tts.config.model-help' | transloco }}</div>
+      </div>
+
+      <!-- Voice -->
+      <div class="mb-3">
+        <label for="tts-voice" class="form-label">{{ 'tts.config.default-voice' | transloco }}</label>
+        <select
+          id="tts-voice"
+          class="form-select"
+          formControlName="defaultVoice">
+          <option value="alloy">Alloy</option>
+          <option value="echo">Echo</option>
+          <option value="fable">Fable</option>
+          <option value="onyx">Onyx</option>
+          <option value="nova">Nova</option>
+          <option value="shimmer">Shimmer</option>
+          @for (voice of voices(); track voice.voiceId) {
+            <option [value]="voice.voiceId">{{ voice.name }}</option>
+          }
+        </select>
+        <div class="form-text">{{ 'tts.config.voice-help' | transloco }}</div>
+      </div>
+
+      <!-- Speed -->
+      <div class="mb-3">
+        <label for="tts-speed" class="form-label">
+          {{ 'tts.config.default-speed' | transloco }}
+          <span class="text-muted">({{ configForm.get('defaultSpeed')?.value }}x)</span>
+        </label>
+        <input
+          type="range"
+          id="tts-speed"
+          class="form-range"
+          min="0.5"
+          max="4.0"
+          step="0.1"
+          formControlName="defaultSpeed"
+        />
+        <div class="d-flex justify-content-between">
+          <span class="form-text">0.5x</span>
+          <span class="form-text">4.0x</span>
+        </div>
+      </div>
+
+      <!-- Test Connection -->
+      <div class="mb-3">
+        <button
+          type="button"
+          class="btn btn-outline-secondary btn-sm"
+          [disabled]="testing() || configForm.invalid"
+          (click)="onTest()">
+          @if (testing()) {
+            <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+          }
+          {{ 'tts.config.test-connection' | transloco }}
+        </button>
+
+        @if (testResult(); as result) {
+          <div class="mt-2" [class.alert-success]="result.success" [class.alert-danger]="!result.success" class="alert mb-0 py-1 px-2" role="alert">
+            @if (result.success) {
+              <i class="fa fa-check-circle text-success me-1" aria-hidden="true"></i>
+            } @else {
+              <i class="fa fa-exclamation-circle text-danger me-1" aria-hidden="true"></i>
+            }
+            {{ result.message }}
+          </div>
+        }
+      </div>
+
+    </form>
+  }
+
+</div>
+
+<div class="modal-footer">
+  <button type="button" class="btn btn-secondary" (click)="onClose()">
+    {{ 'common.close' | transloco }}
+  </button>
+  <button
+    type="button"
+    class="btn btn-primary"
+    [disabled]="saving() || configForm.invalid"
+    (click)="onSave()">
+    @if (saving()) {
+      <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+    }
+    {{ 'common.save' | transloco }}
+  </button>
+</div>

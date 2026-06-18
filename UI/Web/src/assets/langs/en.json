@@ -1359,7 +1359,39 @@
 
         "force-selected-one-column": "Layout mode switched to One Column due to insufficient space to render Two Columns",
         "forced-vertical-switch": "Layout mode switched as Two Column layout doesn't work with Vertical Writing Style",
-        "shortcuts-menu-alt": "{{manga-reader.shortcuts-menu-alt}}"
+        "shortcuts-menu-alt": "{{manga-reader.shortcuts-menu-alt}}",
+
+        "tts": {
+            "enable": "Enable Text-to-Speech",
+            "enable-tooltip": "Enable TTS audiobook playback for this series. Configure your TTS server in settings.",
+            "configure": "Configure TTS Server",
+            "start-reading": "Start Reading",
+            "pause": "Pause",
+            "resume": "Resume",
+            "stop": "Stop",
+            "chunk-progress": "{{current}} / {{total}} chunks",
+            "error-tooltip": "TTS playback error: {{message}}",
+            "settingsTooltip": "Configure TTS server settings",
+            "setupPrompt": "Text-to-Speech is available but not configured.",
+            "configureNow": "Configure Now"
+        }
+    },
+
+    "tts": {
+        "config": {
+            "title": "Text-to-Speech Settings",
+            "server-url": "TTS Server URL",
+            "server-url-required": "Server URL is required",
+            "server-url-help": "Base URL of your OpenAI-compatible TTS server (e.g. https://api.openai.com)",
+            "api-key": "API Key",
+            "api-key-help": "Your API key for the TTS server. Encrypted at rest.",
+            "default-model": "Default Model",
+            "model-help": "TTS model identifier (e.g. tts-1, tts-1-hd)",
+            "default-voice": "Default Voice",
+            "voice-help": "Voice to use for TTS synthesis",
+            "default-speed": "Default Speed",
+            "test-connection": "Test Connection"
+        }
     },
 
     "personal-table-of-contents": {

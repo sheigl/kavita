@@ -98,6 +98,7 @@ public sealed class DataContext : IdentityDbContext<AppUser, AppRole, int,
     public DbSet<ClientDevice> ClientDevice { get; set; } = null!;
     public DbSet<ClientDeviceHistory> ClientDeviceHistory { get; set; } = null!;
     public DbSet<AppUserAuthKey> AppUserAuthKey { get; set; } = null!;
+    public DbSet<UserTtsConfig> UserTtsConfigs { get; set; } = null!;
 
     public DbSet<ReadingListTag> ReadingListTag { get; set; } = null!;
     public DbSet<ReadingListRemapRule> ReadingListRemapRule { get; set; } = null!;
@@ -325,6 +326,24 @@ public sealed class DataContext : IdentityDbContext<AppUser, AppRole, int,
         builder.Entity<AppUserReadingProfile>()
             .PrimitiveCollection(p => p.DeviceIds)
             .HasDefaultValue(new List<int>());
+        #endregion
+
+        #region UserTtsConfig
+        builder.Entity<UserTtsConfig>()
+            .Property(b => b.DefaultModel)
+            .HasDefaultValue("tts-1");
+        builder.Entity<UserTtsConfig>()
+            .Property(b => b.DefaultVoice)
+            .HasDefaultValue("alloy");
+        builder.Entity<UserTtsConfig>()
+            .Property(b => b.DefaultSpeed)
+            .HasDefaultValue(1.0f);
+
+        builder.Entity<UserTtsConfig>()
+            .HasOne(u => u.AppUser)
+            .WithOne()
+            .HasForeignKey<UserTtsConfig>(u => u.AppUserId)
+            .OnDelete(DeleteBehavior.Cascade);
         #endregion
 
         #region AppUser Streams

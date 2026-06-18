@@ -162,4 +162,23 @@ public class AppUserReadingProfile
 
 
     #endregion
+
+    #region TtsReader
+
+    /// <summary>
+    /// Whether TTS audiobook playback is enabled for this reading profile.
+    /// </summary>
+    public bool TtsEnabled { get; set; } = false;
+
+    /// <summary>
+    /// Optional voice override for this series/profile. If null, falls back to UserTtsConfig.DefaultVoice.
+    /// </summary>
+    public string? TtsVoiceOverride { get; set; }
+
+    /// <summary>
+    /// Optional speed override (0.5 - 4.0) for this series/profile. If null, falls back to UserTtsConfig.DefaultSpeed.
+    /// </summary>
+    public float? TtsSpeedOverride { get; set; }
+
+    #endregion
 }

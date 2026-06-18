@@ -1,3 +1,4 @@
+using System;
 using System.IO.Abstractions;
 using Kavita.API.Services;
 using Kavita.API.Services.Helpers;
@@ -105,6 +106,13 @@ public static class ApplicationServiceExtensions
         services.AddScoped<IReadingHistoryService, ReadingHistoryService>();
         services.AddScoped<IClientDeviceService, ClientDeviceService>();
         services.AddScoped<IDeviceTrackingService, DeviceTrackingService>();
+
+        // TTS Service
+        services.AddScoped<ITtsService, TtsService>();
+        services.AddHttpClient("TtsClient", client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
 
 
         services.AddScoped<IFileCacheService, FileCacheService>();

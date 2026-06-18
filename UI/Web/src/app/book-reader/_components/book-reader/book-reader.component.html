@@ -178,7 +178,24 @@
           </button>
         </div>
 
-      </div>
+       <!-- TTS Setup Banner (shown when no config exists and not yet dismissed) -->
+        <div class="tts-setup-banner" *ngIf="(isTtsVisible$ | async) === false && !ttsBannerDismissed()">
+          <span translate>book-reader.tts.setupPrompt</span>
+          <a href="#" (click)="openTtsConfig()" translate>book-reader.tts.configureNow</a>
+          <button type="button" class="btn-close btn-close-sm ms-2" aria-label="Close" (click)="dismissBanner()"></button>
+        </div>
+
+        <!-- TTS Controls + Settings Button -->
+        <ng-container *ngIf="(isTtsVisible$ | async) as isVisible">
+          <app-tts-controls [visible]="isVisible" />
+          <button class="btn btn-outline-secondary btn-icon ms-2 tts-config-btn"
+                  (click)="openTtsConfig()"
+                  title="{{'book-reader.tts.settingsTooltip' | transloco}}">
+            <i class="fa fa-cog" aria-hidden="true"></i>
+          </button>
+        </ng-container>
+
+       </div>
     </ng-template>
   </ng-container>
 </div>

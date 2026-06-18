@@ -19,11 +19,11 @@ import {
   viewChild,
   ViewContainerRef
 } from '@angular/core';
-import {DOCUMENT, NgClass, NgStyle, NgTemplateOutlet, PercentPipe} from '@angular/common';
+import {AsyncPipe, DOCUMENT, NgClass, NgIf, NgStyle, NgTemplateOutlet, PercentPipe} from '@angular/common';
 import {ActivatedRoute, Router} from '@angular/router';
 import {ToastrService} from 'ngx-toastr';
-import {firstValueFrom, forkJoin, fromEvent, merge, of, switchMap} from 'rxjs';
-import {catchError, debounceTime, distinctUntilChanged, filter, take, tap} from 'rxjs/operators';
+import {firstValueFrom, forkJoin, fromEvent, merge, Observable, of, switchMap} from 'rxjs';
+import {catchError, debounceTime, distinctUntilChanged, filter, map, take, tap} from 'rxjs/operators';
 import {Chapter} from 'src/app/_models/chapter';
 import {NavService} from 'src/app/_services/nav.service';
 import {CHAPTER_ID_DOESNT_EXIST, CHAPTER_ID_NOT_FETCHED, ReaderService} from 'src/app/_services/reader.service';
@@ -45,7 +45,7 @@ import {ThemeService} from 'src/app/_services/theme.service';
 import {ScrollService} from 'src/app/_services/scroll.service';
 import {PAGING_DIRECTION} from 'src/app/manga-reader/_models/reader-enums';
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
-import {NgbTooltip} from '@ng-bootstrap/ng-bootstrap';
+import {NgbModal, NgbTooltip} from '@ng-bootstrap/ng-bootstrap';
 import {BookLineOverlayComponent} from "../book-line-overlay/book-line-overlay.component";
 import {translate, TranslocoDirective} from "@jsverse/transloco";
 import {ReadingProfile} from "../../../_models/preferences/reading-profiles";
@@ -72,6 +72,10 @@ import {KeyBindTarget} from "../../../_models/preferences/preferences";
 import {BreakpointService} from "../../../_services/breakpoint.service";
 import {KavitaTitleStrategy} from "../../../_services/kavita-title.strategy";
 import {EntityTitleService} from "../../../_services/entity-title.service";
+import {TtsControlsComponent} from "../tts-controls/tts-controls.component";
+import {TtsPlaybackService} from "../../_services/tts-playback.service";
+import {TtsService} from "../../_services/tts-service";
+import {ManageTtsConfigComponent} from "../manage-tts-config/manage-tts-config.component";
 
 
 interface HistoryPoint {
@@ -134,7 +138,8 @@ const KEYBIND_TARGETS = [
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NgTemplateOutlet, NgStyle, NgClass, NgbTooltip,
     BookLineOverlayComponent, TranslocoDirective, ColumnLayoutClassPipe,
-    WritingStyleClassPipe, ReadTimeLeftPipe, PercentPipe, NgxSliderModule],
+    WritingStyleClassPipe, ReadTimeLeftPipe, PercentPipe, NgxSliderModule,
+    TtsControlsComponent, AsyncPipe, NgIf],
   providers: [EpubReaderSettingsService, LayoutMeasurementService],
 })
 export class BookReaderComponent implements OnInit, AfterViewInit, OnDestroy {
@@ -167,6 +172,24 @@ export class BookReaderComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly keyBindService = inject(KeyBindService);
   protected readonly breakpointService = inject(BreakpointService);
   private readonly entityTitleService = inject(EntityTitleService);
+  protected readonly ttsPlayback = inject(TtsPlaybackService);
+  private readonly modalService = inject(NgbModal);
+  private readonly ttsService = inject(TtsService);
+
+  // TTS visibility: true when user has configured a valid server URL
+  isTtsVisible$: Observable<boolean> = this.ttsService.getConfig().pipe(
+    tap(config => {
+      // If config exists with a serverUrl, mark banner as dismissed so it doesn't show again on reload
+      if (config.serverUrl) {
+        this.ttsBannerDismissed.set(true);
+      }
+    }),
+    map(config => !!config?.serverUrl),
+    takeUntilDestroyed(this.destroyRef),
+  );
+
+  // Dismissable banner state — persisted only for the current session
+  ttsBannerDismissed = signal<boolean>(false);
 
   libraryId!: number;
   seriesId!: number;
@@ -1170,6 +1193,12 @@ export class BookReaderComponent implements OnInit, AfterViewInit, OnDestroy {
 
   loadChapter(chapterId: number, direction: 'Next' | 'Prev') {
     if (chapterId >= 0) {
+      // Auto-restart TTS playback for the new chapter if it was active
+      const prevState = this.ttsPlayback.state();
+      if (prevState === 'playing' || prevState === 'paused') {
+        this.ttsPlayback.startStream(chapterId);
+      }
+
       this.chapterId = chapterId;
       this.continuousChaptersStack.push(chapterId);
       // Ensure all scroll locks are undone
@@ -2654,6 +2683,16 @@ export class BookReaderComponent implements OnInit, AfterViewInit, OnDestroy {
         element.style.outline = '';
       }, 1_000);
     }
+  }
+
+  /** Opens the TTS server configuration modal. */
+  openTtsConfig(): void {
+    this.modalService.open(ManageTtsConfigComponent, {size: 'lg', backdrop: 'static'});
+  }
+
+  /** Dismisses the first-time TTS setup banner for the current session. */
+  dismissBanner(): void {
+    this.ttsBannerDismissed.set(true);
   }
 
 

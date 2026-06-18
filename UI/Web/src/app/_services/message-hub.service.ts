@@ -157,6 +157,14 @@ export enum EVENTS {
    * A scrobble provider has had their (authentication) details updated
    */
   ScrobbleProviderUpdated = 'ScrobbleProviderUpdated',
+  /**
+   * TTS audio chunk received from SignalR stream
+   */
+  TtsAudioChunk = 'TtsAudioChunk',
+  /**
+   * TTS playback status update from SignalR stream
+   */
+  TtsPlaybackUpdate = 'TtsPlaybackUpdate',
 }
 
 export interface Message<T> {
@@ -460,6 +468,21 @@ export class MessageHubService {
       this.messagesSource.next({
         event: EVENTS.ScrobbleProviderUpdated,
         payload: resp.body as ScrobbleProviderUpdatedEvent
+      });
+    });
+
+    // TTS events — sent via SendMessageToAsync with direct method names
+    this.hubConnection.on('TtsAudioChunk', (resp) => {
+      this.messagesSource.next({
+        event: EVENTS.TtsAudioChunk,
+        payload: resp.body
+      });
+    });
+
+    this.hubConnection.on('TtsPlaybackUpdate', (resp) => {
+      this.messagesSource.next({
+        event: EVENTS.TtsPlaybackUpdate,
+        payload: resp.body
       });
     });
   }

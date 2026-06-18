@@ -1,0 +1,27 @@
+.modal-header {
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.modal-footer {
+  border-top: 1px solid var(--bs-border-color);
+}
+
+.form-label {
+  font-weight: 500;
+}
+
+.form-range {
+  cursor: pointer;
+}
+
+.alert-success {
+  background-color: rgba(var(--bs-success-rgb), 0.1);
+  border: 1px solid rgba(var(--bs-success-rgb), 0.3);
+  color: var(--bs-success);
+}
+
+.alert-danger {
+  background-color: rgba(var(--bs-danger-rgb), 0.1);
+  border: 1px solid rgba(var(--bs-danger-rgb), 0.3);
+  color: var(--bs-danger);
+}

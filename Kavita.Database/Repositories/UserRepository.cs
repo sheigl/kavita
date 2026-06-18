@@ -966,4 +966,27 @@ public class UserRepository(DataContext context, UserManager<AppUser> userManage
             .AsNoTracking()
             .FirstAsync(ct);
     }
+
+    #region TTS
+
+    public async Task<UserTtsConfig?> GetUserTtsConfigAsync(int userId, CancellationToken ct = default)
+    {
+        return await context.UserTtsConfigs
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.AppUserId == userId, ct);
+    }
+
+    public void AddUserTtsConfig(UserTtsConfig config)
+    {
+        context.UserTtsConfigs.Add(config);
+    }
+
+    public async Task<AppUserReadingProfile?> GetUserReadingProfileForSeriesAsync(int userId, int seriesId, CancellationToken ct = default)
+    {
+        return await context.AppUserReadingProfiles
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.AppUserId == userId && p.SeriesIds.Contains(seriesId), ct);
+    }
+
+    #endregion
 }

@@ -89,4 +89,23 @@ public class EventHub(IHubContext<MessageHub> messageHub, IPresenceTracker prese
         await messageHub.Clients.Users([userId + string.Empty]).SendAsync(method, message, cancellationToken: ct);
     }
 
+    /// <summary>
+    /// Sends a TTS audio chunk directly to the specified user via SignalR.
+    /// </summary>
+    public async Task SendTtsAudioChunk(int userId, TtsAudioChunkMessage message)
+    {
+        var signalRMessage = MessageFactory.TtsAudioChunkEvent(userId, message.ChunkIndex, message.AudioBase64);
+        await SendMessageToAsync(MessageFactory.TtsAudioChunk, signalRMessage, userId);
+    }
+
+    /// <summary>
+    /// Sends a TTS playback status update directly to the specified user via SignalR.
+    /// </summary>
+    public async Task SendTtsPlaybackUpdate(int userId, TtsStreamStatusMessage message)
+    {
+        var signalRMessage = MessageFactory.TtsPlaybackUpdateEvent(
+            userId, message.ChunkIndex, message.TotalChunks, message.IsComplete, message.IsCancelled, message.ErrorMessage);
+        await SendMessageToAsync(MessageFactory.TtsPlaybackUpdate, signalRMessage, userId);
+    }
+
 }

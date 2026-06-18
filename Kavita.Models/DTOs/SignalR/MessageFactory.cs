@@ -197,6 +197,16 @@ public static class MessageFactory
     /// </summary>
     public const string ScrobbleProviderUpdated = nameof(ScrobbleProviderUpdated);
 
+    /// <summary>
+    /// TTS audio chunk is being streamed to a user
+    /// </summary>
+    public const string TtsAudioChunk = "TtsAudioChunk";
+
+    /// <summary>
+    /// TTS playback status update (progress, complete, cancelled, error)
+    /// </summary>
+    public const string TtsPlaybackUpdate = "TtsPlaybackUpdate";
+
 
     public static SignalRMessage DashboardUpdateEvent(int userId)
     {
@@ -851,6 +861,37 @@ public static class MessageFactory
             Body = new
             {
                 Provider = provider
+            }
+        };
+    }
+
+    public static SignalRMessage TtsAudioChunkEvent(int userId, int chunkIndex, string audioBase64)
+    {
+        return new SignalRMessage
+        {
+            Name = TtsAudioChunk,
+            Body = new
+            {
+                UserId = userId,
+                ChunkIndex = chunkIndex,
+                AudioBase64 = audioBase64,
+            }
+        };
+    }
+
+    public static SignalRMessage TtsPlaybackUpdateEvent(int userId, int chunkIndex, int totalChunks, bool isComplete, bool isCancelled, string? errorMessage)
+    {
+        return new SignalRMessage
+        {
+            Name = TtsPlaybackUpdate,
+            Body = new
+            {
+                UserId = userId,
+                ChunkIndex = chunkIndex,
+                TotalChunks = totalChunks,
+                IsComplete = isComplete,
+                IsCancelled = isCancelled,
+                ErrorMessage = errorMessage,
             }
         };
     }
