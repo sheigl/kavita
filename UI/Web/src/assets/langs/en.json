@@ -1366,6 +1366,7 @@
             "enable-tooltip": "Enable TTS audiobook playback for this series. Configure your TTS server in settings.",
             "configure": "Configure TTS Server",
             "start-reading": "Start Reading",
+            "play": "Play",
             "pause": "Pause",
             "resume": "Resume",
             "stop": "Stop",
@@ -1981,7 +1982,15 @@
         "theme-dark": "Dark",
         "theme-black": "Black",
         "theme-white": "White",
-        "theme-paper": "Paper"
+        "theme-paper": "Paper",
+
+        "tts-settings-title": "Text-to-Speech",
+        "tts-enable-label": "Enable TTS for this series",
+        "tts-voice-label": "Voice Override",
+        "tts-voice-default": "Use default",
+        "tts-speed-label": "Playback Speed",
+        "tts-speed-min": "0.5x",
+        "tts-speed-max": "4x"
     },
 
     "table-of-contents": {
@@ -2538,6 +2547,7 @@
         "preferences": "Preferences",
         "custom-key-binds": "Key Binds",
         "reading-profiles": "Reading Profiles",
+        "tts-config": "Text-to-Speech",
         "clients": "Auth Keys / OPDS",
         "devices": "Devices",
         "scrobbling": "Scrobbling",

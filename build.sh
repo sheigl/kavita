@@ -92,12 +92,16 @@ Package()
     echo "Copying LICENSE"
     cp ../LICENSE "$lOutputFolder"/LICENSE.txt
 
-    echo "Renaming Kavita.Server -> Kavita"
+    echo "Ensuring binary is named Kavita"
     if [ $runtime == "win-x64" ] || [ $runtime == "win-x86" ]
     then
-        mv "$lOutputFolder"/Kavita.Server.exe "$lOutputFolder"/Kavita.exe
+        if [ -f "$lOutputFolder"/Kavita.Server.exe ]; then
+            mv "$lOutputFolder"/Kavita.Server.exe "$lOutputFolder"/Kavita.exe
+        fi
     else
-        mv "$lOutputFolder"/Kavita.Server "$lOutputFolder"/Kavita
+        if [ -f "$lOutputFolder"/Kavita.Server ]; then
+            mv "$lOutputFolder"/Kavita.Server "$lOutputFolder"/Kavita
+        fi
     fi
 
     mkdir -p $lOutputFolder/config

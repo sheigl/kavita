@@ -157,6 +157,15 @@ public interface IUserRepository
     #region TTS
     Task<UserTtsConfig?> GetUserTtsConfigAsync(int userId, CancellationToken ct = default);
     void AddUserTtsConfig(UserTtsConfig config);
+    /// <summary>
+    /// Explicitly marks the UserTtsConfig as Modified so EF Core emits an UPDATE
+    /// on the next CommitAsync. Required because <see cref="GetUserTtsConfigAsync"/>
+    /// uses AsNoTracking() — a sensible default for read paths (GetVoicesAsync,
+    /// StartStreamAsync) but a footgun for the save path: mutating an un-tracked
+    /// entity and committing silently emits NO SQL, so the user's edits appear to
+    /// "not save". Call this in SaveUserTtsConfigAsync before committing.
+    /// </summary>
+    void UpdateUserTtsConfig(UserTtsConfig config);
     Task<AppUserReadingProfile?> GetUserReadingProfileForSeriesAsync(int userId, int seriesId, CancellationToken ct = default);
     #endregion
 }

@@ -18,6 +18,13 @@ import {
  */
 export type TtsPlaybackState = 'idle' | 'connecting' | 'playing' | 'paused' | 'error' | 'completed';
 
+/** A decoded audio buffer paired with the metadata needed to drive the highlight signal. */
+interface QueuedChunk {
+  buffer: AudioBuffer;
+  chunkIndex: number;
+  text: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -38,8 +45,11 @@ export class TtsPlaybackService {
   /** Total number of chunks in the current stream session. */
   public readonly totalChunks = signal<number>(0);
 
-  /** Index of the chunk currently being synthesized/received via SignalR (-1 when none). */
+  /** Index of the chunk currently being played back via Web Audio (-1 until first buffer starts). */
   public readonly currentChunkIndex = signal<number>(-1);
+
+  /** Text content of the chunk currently being played back (empty string when none). */
+  public readonly currentChunkText = signal<string>('');
 
   /** Number of audio buffers successfully decoded and queued for playback. */
   public readonly bufferedChunks = signal<number>(0);
@@ -62,8 +72,8 @@ export class TtsPlaybackService {
   /** Web Audio API context (lazy-initialized). */
   private audioContext: AudioContext | null = null;
 
-  /** Queue of decoded AudioBuffer instances waiting to be played. */
-  private readonly bufferQueue: AudioBuffer[] = [];
+  /** Queue of decoded audio buffers waiting to be played, each with its chunk metadata. */
+  private readonly bufferQueue: QueuedChunk[] = [];
 
   /** Whether we are actively playing an audio buffer from the queue. */
   private isPlayingBuffer = false;
@@ -90,7 +100,7 @@ export class TtsPlaybackService {
     chapterId: number,
     startChunk = 0,
     endChunk = -1,
-    granularity = TtsChunkGranularity.Paragraph,
+    granularity = TtsChunkGranularity.Sentence,
     voiceOverride?: string | null,
     speedOverride?: number | null,
   ): void {
@@ -152,6 +162,7 @@ export class TtsPlaybackService {
     this.chapterId.set(0);
     this.totalChunks.set(0);
     this.currentChunkIndex.set(-1);
+    this.currentChunkText.set('');
     this.bufferedChunks.set(0);
     this.isPaused.set(false);
     this.errorMessage.set(null);
@@ -218,11 +229,13 @@ export class TtsPlaybackService {
   processAudioChunk(chunk: TtsAudioChunkMessage): void {
     if (this.streamEnded) return;
 
-    this.currentChunkIndex.set(chunk.chunkIndex);
     this.bufferedChunks.update(v => v + 1);
 
-    // Decode audio data asynchronously and queue for playback
-    this.decodeAndQueueBase64Audio(chunk.audioBase64, chunk.chunkIndex);
+    // Decode audio data asynchronously and queue for playback.
+    // The highlight signals (currentChunkIndex/currentChunkText) are set
+    // only when the buffer actually starts playing, not on arrival —
+    // otherwise the highlight races ahead of the audio.
+    this.decodeAndQueueBase64Audio(chunk.audioBase64, chunk.chunkIndex, chunk.text ?? '');
   }
 
   /**
@@ -232,28 +245,28 @@ export class TtsPlaybackService {
     if (status.isComplete) {
       this.streamEnded = true;
       this.state.set('completed');
-    } else if (status.IsCancelled ?? false) {
-      // Handle the C# property name which may be serialized as-is or camelCased depending on serializer config.
+      this.currentChunkText.set('');
+    } else if (status.isCancelled ?? false) {
       this.streamEnded = true;
       this.state.set('idle');
-    } else if (status.isCancelled) {
-      this.streamEnded = true;
-      this.state.set('idle');
+      this.currentChunkText.set('');
     } else if (status.errorMessage) {
       this.streamEnded = true;
       this.state.set('error');
       this.errorMessage.set(status.errorMessage);
+      this.currentChunkText.set('');
     }
 
-    // Update progress tracking
-    this.currentChunkIndex.set(status.chunkIndex);
+    // Update total chunk count once known. currentChunkIndex is driven by
+    // actual playback start (playNextFromQueue), not by receipt/synthesis —
+    // otherwise the highlight (and progress %) races ahead of the audio.
     if (status.totalChunks > 0 && this.totalChunks() === 0) {
       this.totalChunks.set(status.totalChunks);
     }
   }
 
   /** Decodes base64 audio data into an AudioBuffer and queues it for playback. */
-  private async decodeAndQueueBase64Audio(base64: string, chunkIndex: number): Promise<void> {
+  private async decodeAndQueueBase64Audio(base64: string, chunkIndex: number, text: string): Promise<void> {
     try {
       // Initialize AudioContext lazily
       if (!this.audioContext) {
@@ -272,8 +285,9 @@ export class TtsPlaybackService {
       // Decode audio data
       const audioBuffer = await ctx.decodeAudioData(bytes.buffer.slice(0));
 
-      // Queue the buffer
-      this.bufferQueue.push(audioBuffer);
+      // Queue the buffer with its chunk metadata so the highlight can be
+      // driven by actual playback start, not by arrival order.
+      this.bufferQueue.push({buffer: audioBuffer, chunkIndex, text});
 
       // If not currently playing a buffer, start playback from the queue
       if (!this.isPlayingBuffer && !this.isPaused() && !this.streamEnded) {
@@ -288,13 +302,18 @@ export class TtsPlaybackService {
   private playNextFromQueue(): void {
     if (!this.audioContext || this.bufferQueue.length === 0 || this.isPlayingBuffer) return;
 
-    const buffer = this.bufferQueue.shift();
-    if (!buffer) return;
+    const item = this.bufferQueue.shift();
+    if (!item) return;
+
+    // Set the highlight signals here — when audio actually starts playing —
+    // so the highlighted sentence stays in sync with the audio.
+    this.currentChunkIndex.set(item.chunkIndex);
+    this.currentChunkText.set(item.text);
 
     this.isPlayingBuffer = true;
 
     const source = this.audioContext.createBufferSource();
-    source.buffer = buffer;
+    source.buffer = item.buffer;
     source.connect(this.audioContext.destination);
 
     source.onended = () => {
@@ -305,14 +324,6 @@ export class TtsPlaybackService {
       } else if (!this.streamEnded && !this.isPaused()) {
         // Set up a watcher: when new buffers arrive, auto-play them
         this.watchForNewBuffers();
-      }
-    };
-
-    source.onerror = (e) => {
-      console.error('Audio playback error', e);
-      this.isPlayingBuffer = false;
-      if (!this.streamEnded && !this.isPaused()) {
-        this.playNextFromQueue();
       }
     };
 

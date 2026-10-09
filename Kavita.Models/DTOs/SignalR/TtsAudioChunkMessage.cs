@@ -14,4 +14,10 @@ public class TtsAudioChunkMessage
     /// Base64-encoded audio data for this chunk.
     /// </summary>
     public string AudioBase64 { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The original text content for this chunk. Used by the frontend to
+    /// highlight the passage currently being read aloud.
+    /// </summary>
+    public string Text { get; set; } = string.Empty;
 }

@@ -15,9 +15,9 @@ public class TtsTestRequestDto
     public string ServerUrl { get; set; } = string.Empty;
 
     /// <summary>
-    /// API key for authentication.
+    /// API key for authentication. Optional — some self-hosted TTS servers
+    /// don't require authentication. Send empty string when not needed.
     /// </summary>
-    [Required]
     [MaxLength(1024)]
     public string ApiKey { get; set; } = string.Empty;
 

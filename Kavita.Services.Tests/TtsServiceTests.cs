@@ -18,6 +18,7 @@ public class TtsServiceTests : IDisposable
     private readonly ILogger<TtsService> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IEventHub _eventHub;
+    private readonly IDataProtectionProvider _dpProvider;
     private readonly IDataProtector _dataProtector;
     private readonly string _tempDir;
 
@@ -31,9 +32,9 @@ public class TtsServiceTests : IDisposable
         // Use a real in-memory DataProtection instance for testing
         _tempDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "kavita-test-keys-" + Guid.NewGuid());
         System.IO.Directory.CreateDirectory(_tempDir);
-        var dpProvider = Microsoft.AspNetCore.DataProtection.DataProtectionProvider.Create(
+        _dpProvider = Microsoft.AspNetCore.DataProtection.DataProtectionProvider.Create(
             new System.IO.DirectoryInfo(_tempDir), options => options.SetApplicationName("kavita-tests"));
-        _dataProtector = dpProvider.CreateProtector("TtsApiKey");
+        _dataProtector = _dpProvider.CreateProtector("TtsApiKey");
     }
 
     /// <summary>
@@ -45,7 +46,7 @@ public class TtsServiceTests : IDisposable
     {
         var httpClient = new HttpClient(handler) { BaseAddress = new Uri("https://api.openai.com/") };
         _httpClientFactory.CreateClient("TtsClient").Returns(httpClient);
-        return new TtsService(_unitOfWork, _logger, _httpClientFactory, _eventHub, _dataProtector);
+        return new TtsService(_unitOfWork, _logger, _httpClientFactory, _eventHub, _dpProvider);
     }
 
     public void Dispose()

@@ -981,6 +981,12 @@ public class UserRepository(DataContext context, UserManager<AppUser> userManage
         context.UserTtsConfigs.Add(config);
     }
 
+    /// <inheritdoc cref="IUserRepository.UpdateUserTtsConfig"/>
+    public void UpdateUserTtsConfig(UserTtsConfig config)
+    {
+        context.UserTtsConfigs.Update(config);
+    }
+
     public async Task<AppUserReadingProfile?> GetUserReadingProfileForSeriesAsync(int userId, int seriesId, CancellationToken ct = default)
     {
         return await context.AppUserReadingProfiles

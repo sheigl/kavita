@@ -18,6 +18,7 @@
 #Checks if the config file exists, and creates it if it does not
 if [ ! -f "/kavita/config/appsettings.json" ]; then
     echo "Kavita configuration file does not exist, copying from temp..."
+    mkdir -p /kavita/config
     cp /tmp/config/appsettings.json /kavita/config/appsettings.json
     if [ -f "/kavita/config/appsettings.json" ]; then
         echo "Copy completed successfully, starting app..."

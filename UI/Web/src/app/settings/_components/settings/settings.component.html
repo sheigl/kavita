@@ -350,6 +350,14 @@
             }
           }
 
+          @case (SettingsTabId.TtsConfig) {
+            @defer (prefetch on idle) {
+              <div class="col-xxl-6 col-12">
+                <app-manage-tts-settings />
+              </div>
+            }
+          }
+
         }
       }
     </div>

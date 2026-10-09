@@ -137,4 +137,17 @@ public sealed record UserReadingProfileDto
 
     #endregion
 
+    #region TtsReader
+
+    /// <inheritdoc cref="AppUserReadingProfile.TtsEnabled"/>
+    public bool TtsEnabled { get; set; } = false;
+
+    /// <inheritdoc cref="AppUserReadingProfile.TtsVoiceOverride"/>
+    public string? TtsVoiceOverride { get; set; }
+
+    /// <inheritdoc cref="AppUserReadingProfile.TtsSpeedOverride"/>
+    public float? TtsSpeedOverride { get; set; }
+
+    #endregion
+
 }

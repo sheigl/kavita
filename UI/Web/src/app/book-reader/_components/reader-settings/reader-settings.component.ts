@@ -23,6 +23,10 @@ import {TranslocoDirective} from "@jsverse/transloco";
 import {ReadingProfile, ReadingProfileKind} from "../../../_models/preferences/reading-profiles";
 import {BookReadingProfileFormGroup, EpubReaderSettingsService} from "../../../_services/epub-reader-settings.service";
 import {EpubFont} from "../../../_models/preferences/epub-font";
+import {AsyncPipe, NgForOf} from '@angular/common';
+import {Observable} from 'rxjs';
+import {TtsService} from '../../_services/tts-service';
+import {TtsVoiceDto} from '../../_models/tts-models';
 
 /**
  * Used for book reader. Do not use for other components
@@ -85,11 +89,15 @@ export const bookColorThemes = [
     changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ReactiveFormsModule, NgbAccordionDirective, NgbAccordionItem, NgbAccordionHeader, NgbAccordionButton,
     NgbAccordionCollapse, NgbAccordionBody, NgbTooltip, NgTemplateOutlet, NgClass, NgStyle,
-    TitleCasePipe, TranslocoDirective]
+    TitleCasePipe, TranslocoDirective, AsyncPipe, NgForOf]
 })
 export class ReaderSettingsComponent implements OnInit {
 
   private readonly cdRef = inject(ChangeDetectorRef);
+  private readonly ttsService = inject(TtsService);
+
+  /** Observable of available TTS voices for the voice override dropdown. */
+  protected ttsVoices$: Observable<TtsVoiceDto[]> = this.ttsService.getVoices();
 
   @Input({required:true}) libraryId!: number;
   @Input({required:true}) seriesId!: number;

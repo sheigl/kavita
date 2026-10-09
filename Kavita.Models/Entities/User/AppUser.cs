@@ -149,6 +149,11 @@ public class AppUser : IdentityUser<int>, IHasConcurrencyToken, IHasCoverImage
     /// </summary>
     public ICollection<AppUserAuthKey> AuthKeys { get; set; } = null!;
 
+    /// <summary>
+    /// Per-user TTS server configuration (server URL, API key, model, voice, speed).
+    /// One-to-one relationship — each user has at most one config.
+    /// </summary>
+    public UserTtsConfig? UserTtsConfig { get; set; }
 
     /// <inheritdoc />
     [ConcurrencyCheck]

@@ -37,6 +37,10 @@ export type BookReadingProfileFormGroup = FormGroup<{
   bookReaderLayoutMode: FormControl<BookPageLayoutMode>;
   bookReaderImmersiveMode: FormControl<boolean>;
   bookReaderDisableBookmarkIcon: FormControl<boolean>;
+  // TTS Reader settings
+  ttsEnabled: FormControl<boolean>;
+  ttsVoiceOverride: FormControl<string | null>;
+  ttsSpeedOverride: FormControl<number | null>;
 }>
 
 @Injectable()
@@ -474,6 +478,10 @@ export class EpubReaderSettingsService {
       bookReaderLayoutMode: this.fb.control(this._layoutMode()),
       bookReaderImmersiveMode: this.fb.control(this._immersiveMode()),
       bookReaderDisableBookmarkIcon: this.fb.control(profile.bookReaderDisableBookmarkIcon),
+      // TTS Reader settings
+      ttsEnabled: this.fb.control(profile.ttsEnabled ?? false),
+      ttsVoiceOverride: this.fb.control<string | null>(profile.ttsVoiceOverride ?? null),
+      ttsSpeedOverride: this.fb.control<number | null>(profile.ttsSpeedOverride ?? null),
     });
 
     // Set up value change subscriptions
@@ -670,6 +678,15 @@ export class EpubReaderSettingsService {
     if (activeTheme) {
       data.bookReaderThemeName = activeTheme.name;
     }
+
+    // TTS Reader settings — read from form controls directly.
+    // Serialize undefined as null so the property is still present in the
+    // JSON body (System.Text.Json drops undefined-named properties). The
+    // backend DTO has `string? TtsVoiceOverride` / `float? TtsSpeedOverride`,
+    // so null cleanly resets the column — undefined would leave it stale.
+    data.ttsEnabled = modelSettings.ttsEnabled;
+    data.ttsVoiceOverride = modelSettings.ttsVoiceOverride ?? null;
+    data.ttsSpeedOverride = modelSettings.ttsSpeedOverride ?? null;
 
     return data;
   }

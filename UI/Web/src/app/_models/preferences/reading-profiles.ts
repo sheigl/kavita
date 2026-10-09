@@ -59,6 +59,11 @@ export interface ReadingProfile {
   pdfScrollMode: PdfScrollMode;
   pdfSpreadMode: PdfSpreadMode;
 
+  // TTS Reader
+  ttsEnabled: boolean;
+  ttsVoiceOverride?: string | null;
+  ttsSpeedOverride?: number | null;
+
   // relations
   seriesIds: number[];
   libraryIds: number[];

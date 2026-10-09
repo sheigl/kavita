@@ -11,12 +11,23 @@
     <!-- Controls row -->
     <div class="tts-controls-row">
 
-      <!-- Play/Pause toggle -->
-      @if (canTogglePause()) {
+     <!-- Start/Play button (shown when idle or completed) -->
+      @if (canStart()) {
         <button
           type="button"
           class="btn btn-sm tts-btn"
-          [ngbTooltip]="'reader.tts.' + (isPaused() ? 'resume' : 'pause') | transloco"
+          [ngbTooltip]="'book-reader.tts.play' | transloco"
+          (click)="onStart()">
+          <i class="fa fa-play-circle"></i>
+        </button>
+      }
+
+       <!-- Play/Pause toggle -->
+       @if (canTogglePause()) {
+        <button
+          type="button"
+          class="btn btn-sm tts-btn"
+          [ngbTooltip]="'book-reader.tts.' + (isPaused() ? 'resume' : 'pause') | transloco"
           (click)="onTogglePause()">
           @if (isPaused()) {
             <i class="fa fa-play"></i>
@@ -26,12 +37,12 @@
         </button>
       }
 
-      <!-- Stop button -->
+       <!-- Stop button -->
       @if (canStop()) {
         <button
           type="button"
           class="btn btn-sm tts-btn"
-          [ngbTooltip]="'reader.tts.stop' | transloco"
+          [ngbTooltip]="'book-reader.tts.stop' | transloco"
           (click)="onStop()">
           <i class="fa fa-stop"></i>
         </button>

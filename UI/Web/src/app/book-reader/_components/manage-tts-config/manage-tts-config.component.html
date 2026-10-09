@@ -130,13 +130,21 @@
         }
       </div>
 
+      <!-- Save error feedback (previously swallowed to console only) -->
+      @if (saveError()) {
+        <div class="mb-3 alert alert-danger py-1 px-2" role="alert">
+          <i class="fa fa-exclamation-circle text-danger me-1" aria-hidden="true"></i>
+          {{ saveError() }}
+        </div>
+      }
+
     </form>
   }
 
 </div>
 
 <div class="modal-footer">
-  <button type="button" class="btn btn-secondary" (click)="onClose()">
+  <button type="button" class="btn btn-secondary" [disabled]="saving()" (click)="onClose()">
     {{ 'common.close' | transloco }}
   </button>
   <button

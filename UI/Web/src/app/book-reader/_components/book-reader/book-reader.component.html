@@ -178,24 +178,35 @@
           </button>
         </div>
 
-       <!-- TTS Setup Banner (shown when no config exists and not yet dismissed) -->
-        <div class="tts-setup-banner" *ngIf="(isTtsVisible$ | async) === false && !ttsBannerDismissed()">
-          <span translate>book-reader.tts.setupPrompt</span>
-          <a href="#" (click)="openTtsConfig()" translate>book-reader.tts.configureNow</a>
-          <button type="button" class="btn-close btn-close-sm ms-2" aria-label="Close" (click)="dismissBanner()"></button>
-        </div>
-
-        <!-- TTS Controls + Settings Button -->
-        <ng-container *ngIf="(isTtsVisible$ | async) as isVisible">
-          <app-tts-controls [visible]="isVisible" />
-          <button class="btn btn-outline-secondary btn-icon ms-2 tts-config-btn"
-                  (click)="openTtsConfig()"
-                  title="{{'book-reader.tts.settingsTooltip' | transloco}}">
-            <i class="fa fa-cog" aria-hidden="true"></i>
-          </button>
-        </ng-container>
-
        </div>
+
+       <!-- TTS row — rendered as a sibling of .action-bar (NOT inside it).
+            The .action-bar uses a 3-column CSS grid with max-height clamping,
+            so any extra children are clipped. Moving TTS controls/banners
+            out here ensures they remain visible. -->
+       <div class="tts-bar">
+         <!-- TTS Setup Banner (shown when no config exists and not yet dismissed) -->
+          <div class="tts-setup-banner" *ngIf="(isTtsVisible$ | async) === false && !ttsBannerDismissed()">
+            <span translate>book-reader.tts.setupPrompt</span>
+            <a href="#" (click)="openTtsConfig()" translate>book-reader.tts.configureNow</a>
+            <button type="button" class="btn-close btn-close-sm ms-2" aria-label="Close" (click)="dismissBanner()"></button>
+          </div>
+
+          <!-- TTS Controls + Settings Button
+               Visible when either: (a) the user has a TTS server configured
+               (so they can press play), or (b) audio is currently active
+               (so they can pause/stop) — covering the case where the config
+               HTTP lookup hasn't resolved yet but playback already started. -->
+          <ng-container *ngIf="(isTtsVisible$ | async) || ttsPlayback.state() !== 'idle'">
+            <app-tts-controls [visible]="true" [chapterId]="chapterId" />
+            <button class="btn btn-outline-secondary btn-icon ms-2 tts-config-btn"
+                    (click)="openTtsConfig()"
+                    title="{{'book-reader.tts.settingsTooltip' | transloco}}">
+              <i class="fa fa-cog" aria-hidden="true"></i>
+            </button>
+          </ng-container>
+       </div>
+
     </ng-template>
   </ng-container>
 </div>

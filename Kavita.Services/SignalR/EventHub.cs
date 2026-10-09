@@ -94,7 +94,7 @@ public class EventHub(IHubContext<MessageHub> messageHub, IPresenceTracker prese
     /// </summary>
     public async Task SendTtsAudioChunk(int userId, TtsAudioChunkMessage message)
     {
-        var signalRMessage = MessageFactory.TtsAudioChunkEvent(userId, message.ChunkIndex, message.AudioBase64);
+        var signalRMessage = MessageFactory.TtsAudioChunkEvent(userId, message.ChunkIndex, message.AudioBase64, message.Text);
         await SendMessageToAsync(MessageFactory.TtsAudioChunk, signalRMessage, userId);
     }
 

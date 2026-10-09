@@ -1,7 +1,7 @@
-import {ChangeDetectionStrategy, Component, computed, inject, input, Input, Signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, inject, input, Signal} from '@angular/core';
 import {NgbTooltip} from '@ng-bootstrap/ng-bootstrap';
-import {TranslocoDirective} from '@jsverse/transloco';
-import {NgClass, NgIf, PercentPipe} from '@angular/common';
+import {TranslocoDirective, TranslocoPipe} from '@jsverse/transloco';
+import {CommonModule, NgClass, NgIf, PercentPipe} from '@angular/common';
 import {TtsPlaybackService, TtsPlaybackState} from '../../_services/tts-playback.service';
 
 @Component({
@@ -9,7 +9,7 @@ import {TtsPlaybackService, TtsPlaybackState} from '../../_services/tts-playback
   templateUrl: './tts-controls.component.html',
   styleUrls: ['./tts-controls.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgIf, NgClass, PercentPipe, NgbTooltip, TranslocoDirective],
+  imports: [CommonModule, NgIf, NgClass, PercentPipe, NgbTooltip, TranslocoDirective, TranslocoPipe],
 })
 export class TtsControlsComponent {
 
@@ -17,6 +17,9 @@ export class TtsControlsComponent {
 
   /** Whether the controls should be visible (e.g. only when TTS is configured). */
   public readonly visible = input<boolean>(true);
+
+  /** Chapter ID to pass to startStream() when the user clicks play. */
+  public readonly chapterId = input<number>(0);
 
   // Expose playback signals for template access
   protected readonly state: Signal<TtsPlaybackState> = this.ttsPlayback.state;
@@ -44,11 +47,21 @@ export class TtsControlsComponent {
     return s !== 'idle' && s !== 'completed';
   });
 
+  /** Whether we should show a start/play button (idle or completed state). */
+  protected readonly canStart = computed(() => {
+    const s = this.state();
+    return s === 'idle' || s === 'completed';
+  });
+
   onTogglePause(): void {
     this.ttsPlayback.togglePause();
   }
 
   onStop(): void {
     this.ttsPlayback.stop();
+  }
+
+  onStart(): void {
+    this.ttsPlayback.startStream(this.chapterId());
   }
 }

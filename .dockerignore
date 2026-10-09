@@ -1,0 +1,37 @@
+# Build artifacts
+**/bin/
+**/obj/
+**/node_modules/
+_output/
+
+# IDE / editor
+**/.vscode/
+**/.idea/
+*.suo
+*.user
+*.swp
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Docker (don't recurse)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Docs & misc
+*.md
+LICENSE
+INSTALL.txt
+build.sh
+copy_runtime.sh
+
+# Test projects (not needed for runtime build)
+**/*.Tests/
+**/*.Benchmark/

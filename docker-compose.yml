@@ -1,0 +1,24 @@
+# Run with:  docker compose up --build -d
+# Stop with: docker compose down
+
+services:
+  kavita:
+    build:
+      context: .
+      dockerfile: Dockerfile.build
+    container_name: kavita
+    restart: unless-stopped
+    ports:
+      - "5123:5000"
+    volumes:
+      # Persistent config + database (SQLite lives here)
+      - kavita-data:/kavita/config
+      # Mount your media folders — edit paths to match your setup
+      - ./data/manga:/manga:ro
+      - ./data/comics:/comics:ro
+      - ./data/books:/books:ro
+    environment:
+      - TZ=UTC
+
+volumes:
+  kavita-data:

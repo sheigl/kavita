@@ -245,6 +245,19 @@ $action-bar-height: 2.375rem;
   left: 0;
   writing-mode: horizontal-tb;
   z-index: 4;
+
+  // TTS row sits directly beneath the main .action-bar as a sibling
+  // (NOT inside it — the .action-bar is a 3-column grid that clips
+  // any extra children via max-height + overflow:hidden).
+  .tts-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    background-color: var(--br-actionbar-bg-color, #292929);
+    border-top: 1px solid var(--bs-border-color, rgba(255,255,255,0.1));
+    min-height: 2rem;
+  }
 }
 
 
@@ -279,6 +292,14 @@ $action-bar-height: 2.375rem;
 ::ng-deep .book-content {
   & a, & :link {
     color: #8db2e5;
+  }
+
+  // Highlights the text currently being read aloud by TTS
+  .tts-active {
+    background-color: rgba(255, 214, 102, 0.55);
+    border-radius: 2px;
+    box-shadow: 0 0 0 2px rgba(255, 214, 102, 0.35);
+    transition: background-color 0.15s ease-in-out;
   }
 }
 

@@ -4663,7 +4663,7 @@ namespace Kavita.Database.Migrations
             modelBuilder.Entity("Kavita.Models.Entities.User.UserTtsConfig", b =>
                 {
                     b.HasOne("Kavita.Models.Entities.User.AppUser", "AppUser")
-                        .WithOne()
+                        .WithOne("UserTtsConfig")
                         .HasForeignKey("Kavita.Models.Entities.User.UserTtsConfig", "AppUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();

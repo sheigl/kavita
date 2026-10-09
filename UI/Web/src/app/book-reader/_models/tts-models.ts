@@ -118,6 +118,8 @@ export interface TtsAudioChunkMessage {
   chunkIndex: number;
   /** Base64-encoded audio data for this chunk. */
   audioBase64: string;
+  /** The original text content for this chunk, used for read-along highlighting. */
+  text: string;
 }
 
 /**

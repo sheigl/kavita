@@ -47,7 +47,7 @@ import {PAGING_DIRECTION} from 'src/app/manga-reader/_models/reader-enums';
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
 import {NgbModal, NgbTooltip} from '@ng-bootstrap/ng-bootstrap';
 import {BookLineOverlayComponent} from "../book-line-overlay/book-line-overlay.component";
-import {translate, TranslocoDirective} from "@jsverse/transloco";
+import {translate, TranslocoDirective, TranslocoPipe} from "@jsverse/transloco";
 import {ReadingProfile} from "../../../_models/preferences/reading-profiles";
 import {ConfirmService} from "../../../shared/confirm.service";
 import {EpubReaderMenuService} from "../../../_services/epub-reader-menu.service";
@@ -137,7 +137,7 @@ const KEYBIND_TARGETS = [
   styleUrls: ['./book-reader.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NgTemplateOutlet, NgStyle, NgClass, NgbTooltip,
-    BookLineOverlayComponent, TranslocoDirective, ColumnLayoutClassPipe,
+    BookLineOverlayComponent, TranslocoDirective, TranslocoPipe, ColumnLayoutClassPipe,
     WritingStyleClassPipe, ReadTimeLeftPipe, PercentPipe, NgxSliderModule,
     TtsControlsComponent, AsyncPipe, NgIf],
   providers: [EpubReaderSettingsService, LayoutMeasurementService],
@@ -176,17 +176,18 @@ export class BookReaderComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly modalService = inject(NgbModal);
   private readonly ttsService = inject(TtsService);
 
-  // TTS visibility: true when user has configured a valid server URL
+  // TTS visibility: true when user has configured a valid server URL.
+  // Per-series ttsEnabled controls auto-start only, not visibility — otherwise
+  // users who configured a server but haven't enabled TTS for the series see nothing.
   isTtsVisible$: Observable<boolean> = this.ttsService.getConfig().pipe(
-    tap(config => {
-      // If config exists with a serverUrl, mark banner as dismissed so it doesn't show again on reload
-      if (config.serverUrl) {
-        this.ttsBannerDismissed.set(true);
-      }
-    }),
-    map(config => !!config?.serverUrl),
-    takeUntilDestroyed(this.destroyRef),
-  );
+      tap(config => {
+        if (config?.serverUrl) {
+          this.ttsBannerDismissed.set(true);
+        }
+      }),
+      map(config => !!config?.serverUrl),
+      takeUntilDestroyed(this.destroyRef),
+    );
 
   // Dismissable banner state — persisted only for the current session
   ttsBannerDismissed = signal<boolean>(false);
@@ -754,6 +755,105 @@ export class BookReaderComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       [KeyBindTarget.NavigateToSettings]
     );
+
+    // TTS read-along highlighting: wraps the currently-playing text chunk
+    // in a highlight span and scrolls it into view as audio advances.
+    effect(() => {
+      const chunkText = this.ttsPlayback.currentChunkText();
+      this.page(); // re-run when the rendered page changes (DOM is replaced)
+
+      const token = ++this._ttsHighlightToken;
+      afterFrame(() => {
+        // Bail if a newer chunk superseded this one before the frame fired.
+        if (token !== this._ttsHighlightToken) return;
+
+        const container = this.bookContentElemRef()?.nativeElement;
+        if (!container) return;
+
+        // Always clear any previous highlight first.
+        this.clearTtsHighlights(container);
+
+        if (!chunkText) return;
+
+        const span = this.highlightTtsChunk(container, chunkText);
+        if (span) {
+          span.scrollIntoView({block: 'center', behavior: 'smooth'});
+        }
+      });
+    });
+  }
+
+  /**
+   * Increments on every TTS highlight effect run so that stale afterFrame
+   * callbacks (scheduled for a chunk that has since been superseded) can detect
+   * they are outdated and bail out before mutating the DOM.
+   */
+  private _ttsHighlightToken = 0;
+
+  /**
+   * Removes all TTS highlight spans from the rendered book content, restoring
+   * the original text nodes (and re-merging adjacent text nodes via normalize()).
+   */
+  private clearTtsHighlights(container: HTMLElement): void {
+    const spans = container.querySelectorAll('span.tts-active');
+    spans.forEach(span => {
+      const parent = span.parentNode;
+      if (!parent) return;
+      while (span.firstChild) {
+        parent.insertBefore(span.firstChild, span);
+      }
+      parent.removeChild(span);
+      parent.normalize();
+    });
+  }
+
+  /**
+   * Finds the first text node in the rendered book content that contains the
+   * chunk text (substring match) and wraps the matched portion in a highlight
+   * span. Returns the created span, or null if no match was found on this page.
+   *
+   * Caveats: sentences containing inline markup (e.g. <em>) are split across
+   * multiple text nodes and will not match in a single-node search. Sentences
+   * spanning page boundaries are also not handled here. Both fall back to no
+   * highlight for the affected chunk, which is acceptable for a first pass.
+   */
+  private highlightTtsChunk(container: HTMLElement, chunkText: string): HTMLElement | null {
+    const needle = chunkText.trim();
+    if (!needle) return null;
+
+    const walker = this.document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
+      acceptNode(node: Node) {
+        const text = (node as Text).nodeValue ?? '';
+        if (!text.trim()) return NodeFilter.FILTER_REJECT;
+        const parent = (node as Text).parentElement;
+        if (!parent) return NodeFilter.FILTER_REJECT;
+        const tag = parent.tagName.toLowerCase();
+        if (tag === 'script' || tag === 'style') return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      },
+    });
+
+    let textNode: Node | null;
+    while ((textNode = walker.nextNode()) !== null) {
+      const value = (textNode as Text).nodeValue ?? '';
+      const idx = value.indexOf(needle);
+      if (idx === -1) continue;
+
+      try {
+        const range = this.document.createRange();
+        range.setStart(textNode, idx);
+        range.setEnd(textNode, idx + needle.length);
+        const span = this.document.createElement('span');
+        span.className = 'tts-active';
+        range.surroundContents(span);
+        return span;
+      } catch {
+        // Range would cross an element boundary — skip and keep searching.
+        continue;
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -1066,6 +1166,14 @@ export class BookReaderComponent implements OnInit, AfterViewInit, OnDestroy {
       // Check if user progress has part, if so load it so we scroll to it
       this.loadPage(progress.bookScrollId || undefined);
       this.readerService.enableWakeLock(this.reader().nativeElement);
+    }
+
+    // Auto-start TTS on initial page load (not on chapter navigation — that's handled by loadChapter())
+    if (firstLoad) {
+      const profile = this.readerSettingsService.currentReadingProfile();
+      if (profile?.ttsEnabled) {
+        this.ttsPlayback.startStream(this.chapterId);
+      }
     }
   }
 

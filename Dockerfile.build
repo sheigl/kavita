@@ -1,0 +1,84 @@
+# ──────────────────────────────────────────────────────
+# Multi-stage Dockerfile that builds everything in containers.
+# No host dependencies required — just `docker build`.
+# Usage:  docker build -t kavita .
+#          docker run -p 5000:5000 -v kavita-data:/kavita/config kavita
+# ──────────────────────────────────────────────────────
+
+# ═══════════════════════════════════════════════════════
+# Stage 1 — Build the Angular frontend (Node.js)
+# ═══════════════════════════════════════════════════════
+FROM node:22-bookworm AS ui-build
+
+WORKDIR /src/UI/Web
+
+# Copy package files first for better layer caching
+COPY UI/Web/package.json UI/Web/package-lock.json* ./
+RUN npm ci
+
+# Copy the rest of the frontend source and build
+COPY UI/Web/ ./
+RUN npm run prod
+
+# ═══════════════════════════════════════════════════════
+# Stage 2 — Build & publish .NET backend
+# ═══════════════════════════════════════════════════════
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS dotnet-build
+
+WORKDIR /src
+
+# Copy solution and project files first for restore caching
+COPY *.sln ./
+COPY Kavita.Server/*.csproj Kavita.Server/
+COPY Kavita.Services/*.csproj Kavita.Services/
+COPY Kavita.API/*.csproj Kavita.API/
+COPY Kavita.Models/*.csproj Kavita.Models/
+COPY Kavita.Common/*.csproj Kavita.Common/
+COPY Kavita.Database/*.csproj Kavita.Database/
+COPY Kavita.Email/*.csproj Kavita.Email/
+
+RUN dotnet restore Kavita.Server/Kavita.Server.csproj
+
+# Copy all source code and publish for linux-x64
+COPY . ./
+RUN dotnet publish Kavita.Server/Kavita.Server.csproj \
+      -c Release \
+      -r linux-x64 \
+      --self-contained true \
+      -o /out
+
+# Copy the built frontend into the publish output
+COPY --from=ui-build /src/UI/Web/dist/browser/ /out/wwwroot/
+
+# ═══════════════════════════════════════════════════════
+# Stage 3 — Minimal runtime image (Ubuntu Noble)
+# ═══════════════════════════════════════════════════════
+FROM ubuntu:noble AS runtime
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=UTC \
+    DOTNET_RUNNING_IN_CONTAINER=true
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+       libicu-dev libgdiplus curl tzdata \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /kavita
+
+# Copy published binary + wwwroot from dotnet-build stage
+COPY --from=dotnet-build /out/ ./
+
+# Copy config template for first-run initialization
+COPY Kavita.Server/config/appsettings.json /tmp/config/appsettings.json
+
+# Copy entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+EXPOSE 5000
+
+HEALTHCHECK --interval=30s --timeout=15s --start-period=30s --retries=3 \
+  CMD curl -fsS http://localhost:5000/api/health || exit 1
+
+ENTRYPOINT [ "/bin/bash", "/entrypoint.sh" ]

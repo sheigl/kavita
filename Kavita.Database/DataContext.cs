@@ -341,7 +341,7 @@ public sealed class DataContext : IdentityDbContext<AppUser, AppRole, int,
 
         builder.Entity<UserTtsConfig>()
             .HasOne(u => u.AppUser)
-            .WithOne()
+            .WithOne(a => a.UserTtsConfig)
             .HasForeignKey<UserTtsConfig>(u => u.AppUserId)
             .OnDelete(DeleteBehavior.Cascade);
         #endregion

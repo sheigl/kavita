@@ -865,7 +865,7 @@ public static class MessageFactory
         };
     }
 
-    public static SignalRMessage TtsAudioChunkEvent(int userId, int chunkIndex, string audioBase64)
+    public static SignalRMessage TtsAudioChunkEvent(int userId, int chunkIndex, string audioBase64, string text)
     {
         return new SignalRMessage
         {
@@ -875,6 +875,7 @@ public static class MessageFactory
                 UserId = userId,
                 ChunkIndex = chunkIndex,
                 AudioBase64 = audioBase64,
+                Text = text,
             }
         };
     }

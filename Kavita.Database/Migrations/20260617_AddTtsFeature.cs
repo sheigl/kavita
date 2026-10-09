@@ -21,7 +21,7 @@ namespace Kavita.Database.Migrations
                     ApiKeyEncrypted = table.Column<byte[]>(type: "BLOB", nullable: true),
                     DefaultModel = table.Column<string>(type: "TEXT", maxLength: 256, nullable: false, defaultValue: "tts-1"),
                     DefaultVoice = table.Column<string>(type: "TEXT", maxLength: 256, nullable: false, defaultValue: "alloy"),
-                    DefaultSpeed = table.Column<float>(type: "REAL", nullable: false, defaultValue: 1.0f),
+                    DefaultSpeed = table.Column<float>(type: "REAL", nullable: false, defaultValue: 1.0f)
                 },
                 constraints: table =>
                 {

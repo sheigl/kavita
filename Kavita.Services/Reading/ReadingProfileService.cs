@@ -443,5 +443,10 @@ public class ReadingProfileService(IUnitOfWork unitOfWork, ILocalizationService 
         existingProfile.PdfTheme = dto.PdfTheme;
         existingProfile.PdfScrollMode = dto.PdfScrollMode;
         existingProfile.PdfSpreadMode = dto.PdfSpreadMode;
+
+        // TTS Reader
+        existingProfile.TtsEnabled = dto.TtsEnabled;
+        existingProfile.TtsVoiceOverride = dto.TtsVoiceOverride;
+        existingProfile.TtsSpeedOverride = dto.TtsSpeedOverride;
     }
 }

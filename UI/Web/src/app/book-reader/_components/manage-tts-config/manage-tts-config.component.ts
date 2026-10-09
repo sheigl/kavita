@@ -1,7 +1,7 @@
 import {ChangeDetectionStrategy, Component, inject, OnInit, signal} from '@angular/core';
 import {FormControl, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
-import {NgbButtonDirective, NgbDropdown, NgbDropdownItem, NgbDropdownMenu, NgbDropdownToggle, NgbModalRef} from '@ng-bootstrap/ng-bootstrap';
-import {TranslocoDirective} from '@jsverse/transloco';
+import {NgbActiveModal, NgbDropdown, NgbDropdownItem, NgbDropdownMenu, NgbDropdownToggle} from '@ng-bootstrap/ng-bootstrap';
+import {TranslocoDirective, TranslocoPipe} from '@jsverse/transloco';
 import {NgIf} from '@angular/common';
 import {firstValueFrom} from 'rxjs';
 import {TtsService} from '../../_services/tts-service';
@@ -12,13 +12,17 @@ import {TtsServerConfigDto, TtsVoiceDto} from '../../_models/tts-models';
   templateUrl: './manage-tts-config.component.html',
   styleUrls: ['./manage-tts-config.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, NgbButtonDirective, NgIf, TranslocoDirective,
+  imports: [ReactiveFormsModule, NgIf, TranslocoDirective, TranslocoPipe,
     NgbDropdown, NgbDropdownToggle, NgbDropdownMenu, NgbDropdownItem],
 })
 export class ManageTtsConfigComponent implements OnInit {
 
   private readonly ttsService = inject(TtsService);
-  private readonly modalRef = inject(NgbModalRef, {optional: null});
+  // NgbActiveModal is the correct NGBprovided service for modal *content*
+  // components to control their own dismiss/close. NgbModalRef is only the
+  // return value of modalService.open() (meant for the opener); injecting it
+  // here returns null and onClose() silently no-ops, leaving the modal stuck.
+  private readonly modalRef = inject(NgbActiveModal);
 
   // Form state
   public configForm = new FormGroup({
@@ -35,6 +39,9 @@ export class ManageTtsConfigComponent implements OnInit {
   public testing = signal<boolean>(false);
   public testResult = signal<{ success: boolean; message: string } | null>(null);
   public voices = signal<TtsVoiceDto[]>([]);
+  // Visible error string when the most recent Save attempt failed.
+  // Cleared on every new save attempt, set on error.
+  public saveError = signal<string | null>(null);
 
   ngOnInit(): void {
     this.loadConfig();
@@ -73,13 +80,22 @@ export class ManageTtsConfigComponent implements OnInit {
   }
 
   async onSave(): Promise<void> {
-    if (!this.configForm.valid) return;
+    if (!this.configForm.valid) {
+      this.saveError.set('Please fill in all required fields.');
+      this.configForm.markAllAsTouched();
+      return;
+    }
 
     const formValue = this.configForm.value;
     this.saving.set(true);
     this.testResult.set(null);
+    this.saveError.set(null);
 
     try {
+      // NOTE: backend treats an empty apiKey as "preserve existing key"
+      // (see SaveUserTtsConfigAsync), so it's safe to send an empty string
+      // when the user hasn't re-entered their key — that no longer wipes
+      // the stored encrypted key.
       await firstValueFrom(this.ttsService.updateConfig({
         serverUrl: formValue.serverUrl!,
         apiKey: formValue.apiKey ?? '',
@@ -88,9 +104,17 @@ export class ManageTtsConfigComponent implements OnInit {
         defaultSpeed: formValue.defaultSpeed!,
       }));
 
-      // Reload voices after saving
+      // Reload voices after saving (newly-configured server may expose voices)
       await this.loadVoices();
-    } catch (err) {
+
+      // Close the modal on successful save so the user gets clear feedback
+      // (previously it silently stayed open with no indication of success).
+      this.modalRef.close('saved');
+    } catch (err: any) {
+      const msg = (err as Error)?.message
+        ?? (err as any)?.error?.message
+        ?? (typeof err === 'string' ? err : 'Failed to save configuration');
+      this.saveError.set(msg);
       console.error('Failed to save TTS config', err);
     } finally {
       this.saving.set(false);

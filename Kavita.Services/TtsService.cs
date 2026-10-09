@@ -31,16 +31,18 @@ public class TtsService(
     ILogger<TtsService> logger,
     IHttpClientFactory httpClientFactory,
     IEventHub eventHub,
-    IDataProtector dataProtector)
+    IDataProtectionProvider dataProtectionProvider)
     : ITtsService
 {
     private const string HttpClientName = "TtsClient";
     private const string TtsApiKeyPurpose = "Kavita.TtsApiKey";
 
+    private readonly IDataProtector _dataProtector = dataProtectionProvider.CreateProtector(TtsApiKeyPurpose);
+
     /// <summary>
     /// Encrypts an API key using ASP.NET Core Data Protection.
     /// </summary>
-    private string EncryptApiKey(string apiKey) => dataProtector.Protect(apiKey);
+    private string EncryptApiKey(string apiKey) => _dataProtector.Protect(apiKey);
 
     /// <summary>
     /// Decrypts an API key using ASP.NET Core Data Protection.
@@ -49,7 +51,7 @@ public class TtsService(
     {
         try
         {
-            return dataProtector.Unprotect(encrypted);
+            return _dataProtector.Unprotect(encrypted);
         }
         catch
         {
@@ -99,6 +101,7 @@ public class TtsService(
         }
 
         var config = await unitOfWork.UserRepository.GetUserTtsConfigAsync(userId);
+        var existingConfig = config != null;
 
         if (config == null)
         {
@@ -110,10 +113,31 @@ public class TtsService(
         }
 
         config.ServerUrl = cleanUrl;
-        config.ApiKeyEncrypted = encryptedKey;
+        // Only replace the stored API key when the request actually carries a
+        // non-empty key. The modal's API key field is intentionally blank on
+        // load (for security), so an empty value here means "user didn't
+        // re-enter it" — preserve the existing encrypted key rather than
+        // silently wiping it. This matches the common "password field update"
+        // UX pattern.
+        if (!string.IsNullOrWhiteSpace(apiKey))
+        {
+            config.ApiKeyEncrypted = encryptedKey;
+        }
         config.DefaultModel = defaultModel;
         config.DefaultVoice = defaultVoice;
         config.DefaultSpeed = defaultSpeed;
+
+        // GetUserTtsConfigAsync uses AsNoTracking() — without an explicit
+        // Update() call, EF Core has no tracked entry for this entity, so
+        // CommitAsync() emits no UPDATE statement and the user's edits
+        // silently don't persist (the row appears unchanged on next GET).
+        // For new configs the Add() branch above already tracks the entity,
+        // so calling Update() here would be redundant — only call it when
+        // we mutated an existing row.
+        if (existingConfig)
+        {
+            unitOfWork.UserRepository.UpdateUserTtsConfig(config);
+        }
 
         await unitOfWork.CommitAsync();
     }
@@ -124,8 +148,11 @@ public class TtsService(
         {
             var client = httpClientFactory.CreateClient(HttpClientName);
             client.BaseAddress = new Uri(request.ServerUrl.TrimEnd('/'));
-            client.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", request.ApiKey);
+            if (!string.IsNullOrWhiteSpace(request.ApiKey))
+            {
+                client.DefaultRequestHeaders.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", request.ApiKey);
+            }
 
             var body = new
             {
@@ -368,6 +395,7 @@ public class TtsService(
                     {
                         ChunkIndex = i,
                         AudioBase64 = Convert.ToBase64String(audioData),
+                        Text = chunk.Text,
                     });
 
                     // Send progress update

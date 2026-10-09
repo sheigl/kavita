@@ -190,6 +190,60 @@
           </div>
         </div>
 
+        <!-- TTS Settings Panel -->
+        <div ngbAccordionItem id="tts-panel" [title]="t('tts-settings-title')" [collapsed]="true">
+          <h2 class="accordion-header" ngbAccordionHeader>
+            <button class="accordion-button" ngbAccordionButton type="button" [attr.aria-expanded]="acc.isExpanded('tts-panel')">
+              <i class="fa fa-volume-up me-1"></i>{{t('tts-settings-title')}}
+              <i class="fas fa-chevron-up" aria-hidden="true"></i>
+            </button>
+          </h2>
+          <div ngbAccordionCollapse>
+            <div ngbAccordionBody>
+              <ng-template>
+                <!-- Enable/Disable Toggle -->
+                <div class="controls d-flex justify-content-between align-items-center">
+                  <label for="tts-enabled" class="form-label">{{t('tts-enable-label')}}</label>
+                  <div class="form-check form-switch">
+                    <input type="checkbox" id="tts-enabled" formControlName="ttsEnabled" class="form-check-input" switch>
+                    <label>{{settingsForm.get('ttsEnabled')?.value ? t('on') : t('off')}}</label>
+                  </div>
+                </div>
+
+                <!-- Voice Override (conditional on ttsEnabled) -->
+                @if (settingsForm.get('ttsEnabled')?.value) {
+                  <div class="controls mt-3">
+                    <label for="tts-voice" class="form-label">{{t('tts-voice-label')}}</label>
+                    <select id="tts-voice" formControlName="ttsVoiceOverride" class="form-select">
+                      <!-- Use [ngValue] for ALL options. Mixing [ngValue] and [value]
+                           on the same <select formControlName> breaks Angular's
+                           SelectValueAccessor: option matching silently fails on
+                           re-render and the saved value resets to the null option.
+                           See other selects in this codebase (manage-reading-profiles,
+                           reader-settings user prefs) which all use [ngValue]. -->
+                      <option [ngValue]="null">{{t('tts-voice-default')}}</option>
+                      @for(voice of (ttsVoices$ | async); track voice.voiceId) {
+                        <option [ngValue]="voice.voiceId">{{voice.name}}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <!-- Speed Override Slider -->
+                  <div class="row g-0 controls mt-3">
+                    <label for="tts-speed" class="form-label col-6">{{t('tts-speed-label')}}</label>
+                    <span class="col-6 float-end" style="display: inline-flex;">
+                      {{t('tts-speed-min')}}
+                      <input type="range" class="form-range ms-2 me-2" id="tts-speed"
+                             min="0.5" max="4.0" step="0.1" formControlName="ttsSpeedOverride">
+                      {{t('tts-speed-max')}}
+                    </span>
+                  </div>
+                }
+              </ng-template>
+            </div>
+          </div>
+        </div>
+
         @let currentRP = currentReadingProfile();
         <div class="row g-0 mt-2">
           <button class="btn btn-primary col-12 mb-2"
